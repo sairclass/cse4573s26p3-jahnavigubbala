@@ -12,8 +12,8 @@ Please first update below and push your change to this repo.
 
 For the environment, you can use the project 2 setting and install face_recognition. Or use your own, there are no hard requirement about pytorch version.
 
-- Jahnavi Gubbala   
-- jgubbala
+- Name: Jahnavi Gubbala   
+- UBIT: jgubbala
 
 **task 1 validation set**
 
