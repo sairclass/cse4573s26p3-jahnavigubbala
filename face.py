@@ -38,6 +38,33 @@ def detect_faces(img: torch.Tensor) -> List[List[float]]:
     detection_results: List[List[float]] = []
 
     ##### YOUR IMPLEMENTATION STARTS HERE #####
+    img_cpu = img.detach().cpu()
+
+    if img_cpu.ndim == 3 and img_cpu.shape[0] == 3:
+        img_cpu = img_cpu.permute(1, 2, 0)
+
+    if img_cpu.dtype != torch.uint8:
+        if img_cpu.max() <= 1.0:
+            img_cpu = (img_cpu * 255.0).clamp(0, 255).to(torch.uint8)
+        else:
+            img_cpu = img_cpu.clamp(0, 255).to(torch.uint8)
+
+    img_np = img_cpu.contiguous().numpy()
+
+    boxes = face_recognition.face_locations(
+        img_np,
+        number_of_times_to_upsample=1,
+        model="hog"
+    )
+
+    H, W = img_cpu.shape[0], img_cpu.shape[1]
+
+    for (top, right, bottom, left) in boxes:
+        x = float(max(0, left))
+        y = float(max(0, top))
+        w = float(max(0, min(W, right) - max(0, left)))
+        h = float(max(0, min(H, bottom) - max(0, top)))
+        detection_results.append([x, y, w, h])
 
     return detection_results
 
