@@ -53,7 +53,7 @@ def detect_faces(img: torch.Tensor) -> List[List[float]]:
 
     boxes = face_recognition.face_locations(
         img_np,
-        number_of_times_to_upsample=1,
+        number_of_times_to_upsample=2,
         model="hog"
     )
 
