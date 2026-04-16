@@ -92,7 +92,74 @@ def cluster_faces(imgs: Dict[str, torch.Tensor], K: int) -> List[List[str]]:
     cluster_results: List[List[str]] = [[] for _ in range(K)] # Please make sure your output follows this data format.
         
     ##### YOUR IMPLEMENTATION STARTS HERE #####
-    
+    img_names: List[str] = []
+    encodings: List[torch.Tensor] = []
+
+    for img_name in sorted(imgs.keys()):
+        img = imgs[img_name].detach().cpu()
+
+        if img.ndim == 3 and img.shape[0] == 3:
+            img = img.permute(1, 2, 0)
+
+        if img.dtype != torch.uint8:
+            if img.max() <= 1.0:
+                img = (img * 255.0).clamp(0, 255).to(torch.uint8)
+            else:
+                img = img.clamp(0, 255).to(torch.uint8)
+
+        img_np = img.contiguous().numpy()
+        face_encs = face_recognition.face_encodings(img_np)
+
+        if len(face_encs) == 0:
+            continue
+
+        enc = torch.tensor(face_encs[0], dtype=torch.float32)
+        enc = enc / (torch.norm(enc) + 1e-8)
+
+        img_names.append(img_name)
+        encodings.append(enc)
+
+    if len(encodings) == 0:
+        return cluster_results
+
+    clusters = []
+    for i in range(len(encodings)):
+        clusters.append({
+            "names": [img_names[i]],
+            "features": [encodings[i]]
+        })
+
+    while len(clusters) > K:
+        best_i = -1
+        best_j = -1
+        best_dist = None
+
+        for i in range(len(clusters)):
+            for j in range(i + 1, len(clusters)):
+                total_dist = 0.0
+                count = 0
+
+                for f1 in clusters[i]["features"]:
+                    for f2 in clusters[j]["features"]:
+                        dist = torch.sum((f1 - f2) ** 2).item()
+                        total_dist += dist
+                        count += 1
+
+                avg_dist = total_dist / count
+
+                if best_dist is None or avg_dist < best_dist:
+                    best_dist = avg_dist
+                    best_i = i
+                    best_j = j
+
+        clusters[best_i]["names"].extend(clusters[best_j]["names"])
+        clusters[best_i]["features"].extend(clusters[best_j]["features"])
+        del clusters[best_j]
+
+    for i in range(len(clusters)):
+        clusters[i]["names"].sort()
+        cluster_results[i] = clusters[i]["names"]
+        
     return cluster_results
 
 
